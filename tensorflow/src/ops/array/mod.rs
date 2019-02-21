@@ -10,6 +10,7 @@ mod pad;
 mod reshape;
 mod squeeze;
 mod strided_slice;
+mod transpose;
 
 pub fn register_all_ops(reg: &mut OpRegister) {
     reg.insert("ConcatV2", concatv2::build);
@@ -28,4 +29,5 @@ pub fn register_all_ops(reg: &mut OpRegister) {
     });
     reg.insert("Squeeze", squeeze::squeeze);
     reg.insert("StridedSlice", strided_slice::build);
+    reg.insert("Transpose", transpose::transpose);
 }

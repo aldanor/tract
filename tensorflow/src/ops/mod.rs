@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use tract_core::ops::Op;
-use tract_core::TractResult;
+use tract_core::ops::prelude::*;
 
 use crate::tfpb::node_def::NodeDef;
 
@@ -27,6 +26,7 @@ impl OpBuilder {
         nn::register_all_ops(&mut reg);
         quant::register_all_ops(&mut reg);
         reg.insert("Const", konst);
+        reg.insert("NoOp", |_| Ok(Box::new(Noop)));
         reg.insert("Placeholder", placeholder);
         OpBuilder(reg)
     }
@@ -59,7 +59,35 @@ pub fn konst(node: &NodeDef) -> TractResult<Box<Op>> {
 
 pub fn placeholder(node: &NodeDef) -> TractResult<Box<Op>> {
     let dt = node.get_attr_datum_type("dtype")?;
-    Ok(Box::new(::tract_core::ops::source::Source::new(
-        ::tract_core::analyser::types::TensorFact::dt(dt.into()),
-    )))
+    let mut fact = TensorFact::dt(dt);
+    if let Some(shape) = node.get_attr_opt_shape("shape")? {
+        fact = fact.with_shape(shape)
+    }
+    Ok(Box::new(::tract_core::ops::source::Source::new(fact)))
+}
+
+#[derive(Clone, Debug, new)]
+struct Noop;
+
+impl Op for Noop {
+    fn name(&self) -> Cow<str> {
+        "tf.Noop".into()
+    }
+}
+
+impl StatelessOp for Noop {
+    fn eval(&self, _inputs: TVec<SharedTensor>) -> TractResult<TVec<SharedTensor>> {
+        Ok(tvec!())
+    }
+}
+
+impl InferenceRulesOp for Noop {
+    fn rules<'r, 'p: 'r, 's: 'r>(
+        &'s self,
+        _s: &mut Solver<'r>,
+        _inputs: &'p [TensorProxy],
+        _outputs: &'p [TensorProxy],
+    ) -> InferenceResult {
+        Ok(())
+    }
 }
