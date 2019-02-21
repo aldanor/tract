@@ -241,12 +241,12 @@ impl Model {
     }
 
     pub fn analyse_one(&mut self, id: usize) -> TractResult<()> {
-        let _ = crate::analyser::Analyser::new(self)?.analyse_one(id)?;
+        crate::analyser::Analyser::new(self)?.analyse_one(id)?;
         Ok(())
     }
 
-    pub fn analyse(&mut self) -> TractResult<()> {
-        crate::analyser::Analyser::new(self)?.analyse()
+    pub fn analyse(&mut self, obstinate: bool) -> TractResult<()> {
+        crate::analyser::Analyser::new(self)?.analyse_obstinate(obstinate)
     }
 
     pub fn missing_type_shape(&self) -> TractResult<Vec<OutletId>> {
@@ -267,7 +267,7 @@ impl Model {
     }
 
     pub fn into_optimized(mut self) -> TractResult<Model> {
-        self.analyse()?;
+        self.analyse(false)?;
         let passes = self.ctx.optimizer_passes();
         for pass in passes {
             info!("Optization pass: {:?}", pass);
@@ -280,7 +280,7 @@ impl Model {
         if cfg!(debug_assertions) {
             model.check_edges()?;
         }
-        model.analyse()?;
+        model.analyse(false)?;
         Ok(model)
     }
 

@@ -348,7 +348,10 @@ impl Parameters {
 
         if !matches.is_present("skip_analyse") {
             info!("Running analyse");
-            tract_model.analyse()?;
+            if let Err(e) = tract_model.analyse(true) {
+                // do not stop on mere analyse error
+                error!("{}", e);
+            }
         } else {
             info!("Skipping analyse");
         }
